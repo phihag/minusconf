@@ -1,0 +1,24 @@
+minusconf is a service location protocol.
+Unlike SSDP/UPnP/ZeroConf/SLP and friends, it works without any configuration anywhere, is lightweight (implemented in one python file), allows multiple services per machine without any configuration between the services and survives turning off arbitrary programs, machines and subnets.
+However, it lacks device descriptions, abonnements and unsolicited advertisements.
+
+
+minusconf advertisers listen on UDP port 6376 on the multicast groups 239.45.99.98 and/or ff08::6d69:6e75:7363:6f6e:6600.
+
+Every minusconf packet starts with 0xadc3e6e7.
+The next byte is the opcode, between 0 and 99 for seekers and 100 and 199 for advertisers.
+The format of the rest of the message depends on the opcode. Any data after the here defined must be ignored.
+Any string(S) is encoded as a netstring [TODO:reference, TODO:implement this]
+
+1 Query(S advertisername, S servicetype, S servicename)
+
+Asks for service locations. An empty string matches any value.
+servicetype can be any name in http://www.iana.org/assignments/port-numbers or another name server and client agree to use.
+
+101 Advertisement (S advertisername, S servicetype, S servicename, S location, S port)
+
+A response to a query. advertisername, servicetype and servicename are usually copied from the query. If the client asked for ""(any value), advertisers should fill in a preferred value. (Because an empty servicetype makes no sense, advertisers must fill in a value in this case.) If location is not empty, it is a string representation of an address that must be used to initiate a connection. The port argument is intended for a string representation of a UDP or TCP port, but can also be used to transfer any other application-specific data. Advertisers may send multiple advertisement packages, hence seekers and clients must ignore(or adequately handle) repeated identical advertisements.
+
+111 Error (S message) (optional)
+
+Optional reply to an invalid or unanswerable query. Must never be sent as a response to an Error message.
