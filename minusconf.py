@@ -12,6 +12,7 @@ import struct
 import socket
 import threading
 import time
+import sys
 
 _PORT = 6376
 _ADDRESS_4 = '239.45.99.98'
@@ -179,11 +180,12 @@ class Advertiser(object):
 
     def _init_advertiser(self):
         sock = _find_sock()
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, struct.pack('@I', 1))
+        sock_reuse_type = socket.SO_REUSEPORT if sys.platform == 'darwin' else socket.SO_REUSEADDR
+        sock.setsockopt(socket.SOL_SOCKET, sock_reuse_type, struct.pack('@I', 1))
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, struct.pack('@I', 1))
         if sock.family == socket.AF_INET6:
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, struct.pack('@I', 1))
-        sock.bind(('', self.port))
+        sock.bind(('', self.port))  # omit group name to receive from all group
 
         addrs = _resolve_addrs(self.addresses, None, self.ignore_unavailable, (sock.family,))
 
